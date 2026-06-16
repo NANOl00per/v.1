@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NanoLooper</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:1rem 0;}
+.device{background:#fff;border:0.5px solid #e2e8f0;border-radius:16px;overflow:hidden;width:100%;max-width:420px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border-bottom:0.5px solid #e2e8f0;}
+.brand{font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;}
+.health{display:flex;align-items:center;gap:5px;}
+.hdot{width:6px;height:6px;border-radius:50%;background:#1D9E75;transition:background 0.3s;}
+.hdot.err{background:#E24B4A;}.hdot.warn{background:#EF9F27;}
+.hlbl{font-size:11px;color:#94a3b8;}
+.ptabs{display:flex;border-bottom:0.5px solid #e2e8f0;}
+.ptab{flex:1;padding:9px 2px;font-size:10px;font-weight:600;text-align:center;cursor:pointer;color:#94a3b8;background:#f8fafc;border-right:0.5px solid #e2e8f0;}
+.ptab:last-child{border-right:none;}
+.ptab.on{background:#fff;color:#1e293b;}
+.ptab.sp.on{color:#1DB954;}
+.ptab.sc.on{color:#FF5500;}
+.ptab.yt.on{color:#FF0000;}
+.ptab.tt.on{color:#000;}
+.login-banner{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;gap:10px;}
+.login-txt{font-size:11px;font-weight:500;color:#fff;line-height:1.4;}
+.login-txt span{opacity:0.85;font-weight:400;}
+.login-btn{flex-shrink:0;padding:5px 12px;border-radius:20px;background:#fff;font-size:11px;font-weight:500;border:none;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;}
+.embed-zone{width:100%;position:relative;background:#000;}
+#yt-container{width:100%;height:220px;display:none;}
+#yt-container iframe{width:100%;height:220px;border:none;display:block;}
+#generic-player{width:100%;border:none;display:none;}
+.generic-sm{height:152px;}
+.generic-tall{height:480px;}
+.dormant-bar{display:none;background:#E24B4A;color:#fff;font-size:11px;padding:7px 14px;text-align:center;cursor:pointer;font-weight:500;}
+.dormant-bar.show{display:block;}
+.meta{padding:12px 14px 8px;}
+.track-name{font-size:15px;font-weight:500;color:#1e293b;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.track-sub{display:flex;align-items:center;gap:8px;}
+.apill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
+.apill-sp{background:#E1F5EE;color:#0F6E56;}
+.apill-sc{background:#FEF0E6;color:#CC4400;}
+.apill-yt{background:#FEE2E2;color:#B91C1C;}
+.apill-tt{background:#f0f0f0;color:#000;}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 8px;}
+.ctrl-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 14px;}
+.cbtn{height:44px;border-radius:8px;border:0.5px solid #e2e8f0;background:#fff;color:#1e293b;font-size:11px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:transform 0.1s,background 0.15s;}
+.cbtn:active{transform:scale(0.95);}
+.cbtn svg{width:18px;height:18px;}
+.cbtn.active{background:#EFF6FF;color:#2563EB;border-color:#BFDBFE;}
+.qlist{max-height:140px;overflow-y:auto;border-top:0.5px solid #e2e8f0;}
+.qrow{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:0.5px solid #e2e8f0;cursor:pointer;transition:background 0.1s;}
+.qrow:last-child{border-bottom:none;}
+.qrow:active{background:#f8fafc;}
+.qrow.now{background:#f8fafc;}
+.qnum{font-size:11px;color:#94a3b8;min-width:18px;text-align:right;}
+.qinfo{flex:1;min-width:0;}
+.qtitle{font-size:12px;font-weight:500;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qsub{font-size:10px;color:#94a3b8;}
+.qnow{width:5px;height:5px;border-radius:50%;background:#1DB954;flex-shrink:0;}
+.foot{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-top:0.5px solid #e2e8f0;background:#f8fafc;}
+.foot-l{font-size:10px;color:#94a3b8;}
+.foot-r{font-size:10px;color:#94a3b8;}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="topbar">
+    <span class="brand">NanoLooper</span>
+    <div class="health">
+      <div class="hdot" id="hdot"></div>
+      <span class="hlbl" id="hlbl">live</span>
+    </div>
+  </div>
+
+  <div class="ptabs">
+    <div class="ptab sp on" onclick="switchPlatform('sp',this)">Spotify</div>
+    <div class="ptab sc" onclick="switchPlatform('sc',this)">SoundCloud</div>
+    <div class="ptab yt" onclick="switchPlatform('yt',this)">YouTube</div>
+    <div class="ptab tt" onclick="switchPlatform('tt',this)">TikTok</div>
+  </div>
+
+  <div id="loginbar"></div>
+
+  <div class="embed-zone">
+    <div id="yt-container"><div id="yt-player"></div></div>
+    <iframe id="generic-player" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+  </div>
+
+  <div class="dormant-bar" id="dormantbar" onclick="dormantSkip()">⚠ Seems stuck — tap to skip · auto-skipping in <span id="dormantcd">30</span>s</div>
+
+  <div class="meta">
+    <div class="track-name" id="tname">Loading…</div>
+    <div class="track-sub"><span class="apill apill-sp" id="tartpill">Spotify</span></div>
+  </div>
+
+  <div class="controls">
+    <button class="cbtn" onclick="prevTrack()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      <span>Previous</span>
+    </button>
+    <button class="cbtn" id="nextbtn" onclick="nextTrack()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="m6 18 8.5-6L6 6v12zm2-8.14 5.5 3.64L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
+      <span>Next</span>
+    </button>
+  </div>
+  <div class="ctrl-row2">
+    <button class="cbtn" id="sbtn" onclick="toggleShuffle()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+      <span>Shuffle off</span>
+    </button>
+    <button class="cbtn active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+      <span>∞ looping</span>
+    </button>
+  </div>
+
+  <div class="qlist" id="qlist"></div>
+
+  <div class="foot">
+    <span class="foot-l" id="footl">track 1</span>
+    <span class="foot-r" id="wdlog">watchdog on</span>
+  </div>
+</div>
+
+<script>
+const ORIGIN="https://NANOl00per.github.io";
+
+const PLATFORMS={
+  sp:{
+    name:"Spotify",pill:"apill-sp",accent:"#1DB954",
+    loginBg:"#1DB954",loginTxt:"Log in to Spotify for full tracks",loginBtn:"Log in",loginHref:"https://accounts.spotify.com/login",
+    tracks:[
+      {id:"13MExkdvuFwX1M3kgx7jL2",type:"album",label:"B2L",artist:"P.Win"},
+      {id:"4syFQkc1XD9M8PYnmWGgBd",type:"album",label:"Win Win",artist:"P.Win"},
+      {id:"2yRr3WjeKYHq3y48619jdZ",type:"album",label:"Studio86",artist:"Studio86"},
+    ],
+    url:(t)=>`https://open.spotify.com/embed/${t.type}/${t.id}?utm_source=generator&theme=0&autoplay=1`,
+    frameClass:"generic-sm",
+  },
+  sc:{
+    name:"SoundCloud",pill:"apill-sc",accent:"#FF5500",
+    loginBg:"#FF5500",loginTxt:"SoundCloud — no login needed",loginBtn:"Open",loginHref:"https://soundcloud.com/p-win",
+    tracks:[
+      {id:"https://soundcloud.com/p-win",label:"P.Win",artist:"P.Win"},
+    ],
+    url:(t)=>`https://w.soundcloud.com/player/?url=${encodeURIComponent(t.id)}&auto_play=true&color=%23FF5500&hide_related=true&show_comments=false&show_user=false`,
+    frameClass:"generic-sm",
+  },
+  yt:{
+    name:"YouTube",pill:"apill-yt",accent:"#FF0000",
+    loginBg:"#FF0000",loginTxt:"YouTube — no login needed",loginBtn:"Open",loginHref:"https://youtube.com",
+    tracks:[
+      {id:"9tEdgndUDzU",label:"WATERTEMPLE",artist:"P.Win"},
+    ],
+    url:null,
+    frameClass:null,
+  },
+  tt:{
+    name:"TikTok",pill:"apill-tt",accent:"#010101",
+    loginBg:"#010101",loginTxt:"TikTok — tap video to play",loginBtn:"Open",loginHref:"https://www.tiktok.com/@aquagrl862/video/7651345248500681998",
+    tracks:[
+      {id:"7651345248500681998",label:"Secret Garden",artist:"P.Win"},
+    ],
+    url:(t)=>`https://www.tiktok.com/embed/v2/${t.id}`,
+    frameClass:"generic-tall",
+  },
+};
+
+let cur=0,platform="sp",shuffleOn=false;
+let advTimer=null,dormantTimer=null,dormantCdInterval=null,dormantRemain=30;
+let ytPlayer=null,ytReady=false;
+const ADVANCE=600,DORMANT_LIMIT=90;
+
+// YouTube IFrame API
+window.onYouTubeIframeAPIReady=function(){
+  ytReady=true;
+  if(platform==="yt") initYT(PLATFORMS.yt.tracks[0].id);
+};
+const ytScript=document.createElement("script");
+ytScript.src="https://www.youtube.com/iframe_api";
+document.head.appendChild(ytScript);
+
+function initYT(videoId){
+  if(ytPlayer){ytPlayer.loadVideoById(videoId);return;}
+  ytPlayer=new YT.Player("yt-player",{
+    videoId,
+    playerVars:{
+      autoplay:1,loop:1,playlist:videoId,
+      rel:0,modestbranding:1,
+      origin:ORIGIN,
+    },
+    events:{
+      onReady:(e)=>{e.target.playVideo();startAdvance();resetDormant();},
+      onStateChange:(e)=>{
+        if(e.data===YT.PlayerState.PLAYING){hideDormant();resetDormant();}
+        if(e.data===YT.PlayerState.ENDED){nextTrack();}
+        if(e.data===YT.PlayerState.PAUSED){startDormantCountdown();}
+      },
+      onError:()=>{
+        setH("warn");
+        document.getElementById("wdlog").textContent="YT error — skipping";
+        setTimeout(()=>nextTrack(),2000);
+      }
+    }
+  });
+}
+
+function switchPlatform(p,el){
+  platform=p;cur=0;
+  document.querySelectorAll(".ptab").forEach(t=>t.classList.remove("on"));
+  el.classList.add("on");
+  clearTimeout(advTimer);hideDormant();
+  updateBanner();updateAccent();
+  if(p==="yt"){
+    document.getElementById("yt-container").style.display="block";
+    document.getElementById("generic-player").style.display="none";
+    updateMeta(PLATFORMS.yt.tracks[0]);
+    if(ytReady) initYT(PLATFORMS.yt.tracks[0].id);
+  } else {
+    document.getElementById("yt-container").style.display="none";
+    document.getElementById("generic-player").style.display="block";
+    load(0);
+  }
+  renderQ();
+}
+
+function load(i){
+  const pl=PLATFORMS[platform].tracks;
+  cur=((i%pl.length)+pl.length)%pl.length;
+  const t=pl[cur];
+  const fr=document.getElementById("generic-player");
+  fr.className=PLATFORMS[platform].frameClass;
+  fr.src="about:blank";
+  setTimeout(()=>{fr.src=PLATFORMS[platform].url(t);},200);
+  updateMeta(t);
+  renderQ();setH("ok");
+  clearTimeout(advTimer);
+  advTimer=setTimeout(()=>nextTrack(),ADVANCE*1000);
+  resetDormant();
+}
+
+function updateMeta(t){
+  document.getElementById("tname").textContent=t.label;
+  document.getElementById("footl").textContent="track "+(cur+1)+" of "+PLATFORMS[platform].tracks.length;
+  const pill=document.getElementById("tartpill");
+  pill.className="apill "+PLATFORMS[platform].pill;
+  pill.textContent=PLATFORMS[platform].name;
+}
+
+function nextTrack(){
+  hideDormant();
+  if(platform==="yt"){
+    const pl=PLATFORMS.yt.tracks;
+    cur=(cur+1)%pl.length;
+    const t=pl[cur];
+    if(ytPlayer){ytPlayer.loadVideoById(t.id);}
+    updateMeta(t);renderQ();startAdvance();resetDormant();
+  } else {
+    const pl=PLATFORMS[platform].tracks;
+    if(shuffleOn){let n;do{n=Math.floor(Math.random()*pl.length);}while(n===cur&&pl.length>1);load(n);}
+    else load(cur+1);
+  }
+}
+function prevTrack(){
+  if(platform==="yt"){
+    cur=((cur-1)+PLATFORMS.yt.tracks.length)%PLATFORMS.yt.tracks.length;
+    if(ytPlayer) ytPlayer.loadVideoById(PLATFORMS.yt.tracks[cur].id);
+    updateMeta(PLATFORMS.yt.tracks[cur]);renderQ();
+  } else load(cur-1);
+}
+
+function startAdvance(){
+  clearTimeout(advTimer);
+  advTimer=setTimeout(()=>nextTrack(),ADVANCE*1000);
+}
+
+function resetDormant(){
+  clearTimeout(dormantTimer);clearInterval(dormantCdInterval);
+  hideDormant();
+  dormantTimer=setTimeout(()=>startDormantCountdown(),DORMANT_LIMIT*1000);
+}
+function startDormantCountdown(){
+  dormantRemain=30;
+  document.getElementById("dormantcd").textContent=dormantRemain;
+  document.getElementById("dormantbar").classList.add("show");
+  clearInterval(dormantCdInterval);
+  dormantCdInterval=setInterval(()=>{
+    dormantRemain--;
+    document.getElementById("dormantcd").textContent=dormantRemain;
+    if(dormantRemain<=0){clearInterval(dormantCdInterval);nextTrack();}
+  },1000);
+}
+function hideDormant(){
+  document.getElementById("dormantbar").classList.remove("show");
+  clearInterval(dormantCdInterval);clearTimeout(dormantTimer);
+}
+function dormantSkip(){hideDormant();nextTrack();}
+
+function updateBanner(){
+  const c=PLATFORMS[platform];
+  document.getElementById("loginbar").innerHTML=`<div class="login-banner" style="background:${c.loginBg}"><div class="login-txt">${c.loginTxt}</div><a class="login-btn" style="color:${c.loginBg}" href="${c.loginHref}" target="_blank">${c.loginBtn}</a></div>`;
+}
+function updateAccent(){
+  const b=document.getElementById("nextbtn"),c=PLATFORMS[platform].accent;
+  b.style.background=c;b.style.color="#fff";b.style.borderColor=c;
+}
+function toggleShuffle(){
+  shuffleOn=!shuffleOn;
+  const b=document.getElementById("sbtn");
+  b.className=shuffleOn?"cbtn active":"cbtn";
+  b.querySelector("span").textContent=shuffleOn?"Shuffle on":"Shuffle off";
+}
+function renderQ(){
+  const list=document.getElementById("qlist");
+  list.innerHTML="";
+  PLATFORMS[platform].tracks.forEach((t,i)=>{
+    const d=document.createElement("div");
+    d.className="qrow"+(i===cur?" now":"");
+    d.innerHTML=`<span class="qnum">${i+1}</span><div class="qinfo"><div class="qtitle">${t.label}</div><div class="qsub">${t.artist||PLATFORMS[platform].name}</div></div><span class="apill ${PLATFORMS[platform].pill}">${PLATFORMS[platform].name}</span>${i===cur?'<div class="qnow"></div>':""}`;
+    d.onclick=()=>{cur=i;platform==="yt"?(ytPlayer&&ytPlayer.loadVideoById(t.id),updateMeta(t),renderQ()):load(i);};
+    list.appendChild(d);
+  });
+}
+function setH(s){
+  const d=document.getElementById("hdot"),l=document.getElementById("hlbl");
+  d.className="hdot"+(s==="err"?" err":s==="warn"?" warn":"");
+  l.textContent=s==="err"?"offline":s==="warn"?"fixing":"live";
+}
+
+// init
+updateBanner();updateAccent();
+document.getElementById("yt-container").style.display="none";
+document.getElementById("generic-player").style.display="block";
+load(0);
+</script>
+</body>
+</html>
