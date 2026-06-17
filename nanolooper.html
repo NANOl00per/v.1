@@ -126,6 +126,16 @@ body{background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 <script>
 const ORIGIN="https://NANOl00per.github.io";
 
+function spotifyDone(){
+  const fr=document.getElementById("generic-player");
+  const saved=fr.src;
+  fr.src="about:blank";
+  setTimeout(()=>{fr.src=saved;},500);
+  const bar=document.getElementById("loginbar");
+  bar.style.transition="opacity 0.4s";bar.style.opacity="0";
+  setTimeout(()=>{bar.style.display="none";},400);
+}
+
 const PLATFORMS={
   sp:{
     name:"Spotify",pill:"apill-sp",accent:"#1DB954",
@@ -170,7 +180,7 @@ const PLATFORMS={
 let cur=0,platform="sp",shuffleOn=false;
 let advTimer=null,dormantTimer=null,dormantCdInterval=null,dormantRemain=30;
 let ytPlayer=null,ytReady=false;
-const ADVANCE=600,DORMANT_LIMIT=90;
+const ADVANCE=600,DORMANT_LIMIT=300;
 
 // YouTube IFrame API
 window.onYouTubeIframeAPIReady=function(){
@@ -299,7 +309,16 @@ function dormantSkip(){hideDormant();nextTrack();}
 
 function updateBanner(){
   const c=PLATFORMS[platform];
-  document.getElementById("loginbar").innerHTML=`<div class="login-banner" style="background:${c.loginBg}"><div class="login-txt">${c.loginTxt}</div><a class="login-btn" style="color:${c.loginBg}" href="${c.loginHref}" target="_blank">${c.loginBtn}</a></div>`;
+  const isSpotify=platform==="sp";
+  document.getElementById("loginbar").innerHTML=isSpotify?
+    `<div class="login-banner" style="background:${c.loginBg}">
+      <div class="login-txt">${c.loginTxt}<br><span>After logging in tap "Done" →</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <a class="login-btn" style="color:${c.loginBg}" href="${c.loginHref}" target="_blank">${c.loginBtn}</a>
+        <button class="login-btn" style="color:${c.loginBg};cursor:pointer" onclick="spotifyDone()">✓ Done</button>
+      </div>
+    </div>`:
+    `<div class="login-banner" style="background:${c.loginBg}"><div class="login-txt">${c.loginTxt}</div><a class="login-btn" style="color:${c.loginBg}" href="${c.loginHref}" target="_blank">${c.loginBtn}</a></div>`;
 }
 function updateAccent(){
   const b=document.getElementById("nextbtn"),c=PLATFORMS[platform].accent;
